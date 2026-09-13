@@ -25,6 +25,9 @@ public sealed class Node
     /// <summary>The shape of the tensor flowing out of this node, if known.</summary>
     public long[]? OutputShape { get; init; }
 
+    /// <summary>The number of learnable scalar parameters owned by this layer (0 for input/output/stateless operation nodes).</summary>
+    public long ParameterCount { get; init; }
+
     /// <summary>
     /// The dotted path of the immediate container module this node lives in (e.g. <c>"features"</c>
     /// for a node named <c>"features.0"</c>), or an empty string when the node sits directly under

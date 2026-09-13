@@ -123,6 +123,72 @@ public class TorchSharpExtractorTests
     }
 
     [Fact]
+    public void Extract_BranchingModel_TracksFanOutFromSharedTrunkToBothBranches()
+    {
+        // trunk -> branchA and trunk -> branchB: both branches consume the exact same tensor that
+        // trunk produced. A naive "connect to whatever ran previously" chain would wrongly draw
+        // trunk -> branchA -> branchB in a straight line.
+        var model = new BranchingModel(features: 4);
+
+        var graph = TorchSharpExtractor.Extract(model, new long[] { 1, 4 });
+
+        var trunk = graph.Nodes.Single(n => n.Name == "trunk");
+        var branchA = graph.Nodes.Single(n => n.Name == "branchA");
+        var branchB = graph.Nodes.Single(n => n.Name == "branchB");
+
+        Assert.Contains(graph.Edges, e => e.FromId == trunk.Id && e.ToId == branchA.Id);
+        Assert.Contains(graph.Edges, e => e.FromId == trunk.Id && e.ToId == branchB.Id);
+        Assert.DoesNotContain(graph.Edges, e => e.FromId == branchA.Id && e.ToId == branchB.Id);
+        Assert.DoesNotContain(graph.Edges, e => e.FromId == branchB.Id && e.ToId == branchA.Id);
+    }
+
+    [Fact]
+    public void Extract_BranchingModel_FallsBackToFanInAcrossUntrackedTensorAdd()
+    {
+        // The "a + b" between the branches and merge is a raw tensor op, invisible to module hooks.
+        // The extractor should still recover the merge point via the fan-in heuristic.
+        var model = new BranchingModel(features: 4);
+
+        var graph = TorchSharpExtractor.Extract(model, new long[] { 1, 4 });
+
+        var branchA = graph.Nodes.Single(n => n.Name == "branchA");
+        var branchB = graph.Nodes.Single(n => n.Name == "branchB");
+        var merge = graph.Nodes.Single(n => n.Name == "merge");
+
+        Assert.Contains(graph.Edges, e => e.FromId == branchA.Id && e.ToId == merge.Id);
+        Assert.Contains(graph.Edges, e => e.FromId == branchB.Id && e.ToId == merge.Id);
+    }
+
+    [Fact]
+    public void Extract_LinearModule_ReportsCorrectParameterCount()
+    {
+        var linear = nn.Linear(10, 5); // weight: 5*10 = 50, bias: 5 => 55 total
+
+        var graph = TorchSharpExtractor.Extract(linear, new long[] { 1, 10 });
+
+        var node = graph.Nodes.Single(n => n.TypeName == "Linear");
+        Assert.Equal(55, node.ParameterCount);
+    }
+
+    [Fact]
+    public void Extract_MultiLayerModel_ComputesTotalParameterCountAndLayerCount()
+    {
+        var model = new SimpleMlp(inputFeatures: 8, hidden: 16, outputFeatures: 4);
+
+        var graph = TorchSharpExtractor.Extract(model, new long[] { 1, 8 });
+
+        var fc1 = graph.Nodes.Single(n => n.Name == "fc1"); // 8*16 + 16 = 144
+        var relu = graph.Nodes.Single(n => n.Name == "relu");
+        var fc2 = graph.Nodes.Single(n => n.Name == "fc2"); // 16*4 + 4 = 68
+
+        Assert.Equal(144, fc1.ParameterCount);
+        Assert.Equal(0, relu.ParameterCount);
+        Assert.Equal(68, fc2.ParameterCount);
+        Assert.Equal(144 + 68, graph.TotalParameterCount);
+        Assert.Equal(3, graph.LayerCount); // fc1, relu, fc2 (excludes input/output tensor nodes)
+    }
+
+    [Fact]
     public void Extract_NullModel_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(() => TorchSharpExtractor.Extract(null!, new long[] { 1 }));

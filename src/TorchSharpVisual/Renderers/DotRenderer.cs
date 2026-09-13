@@ -19,17 +19,30 @@ public static class DotRenderer
     private const string ModuleColor = "#D5E8D4"; // soft green
     private const string OperationColor = "#DAE8FC"; // soft blue
 
+    /// <summary>Builds the Graphviz DOT source for <paramref name="graph"/> using the default <see cref="RenderOptions"/>.</summary>
+    public static string ToDot(Graph graph) => ToDot(graph, RenderOptions.Default);
+
     /// <summary>Builds the Graphviz DOT source for <paramref name="graph"/> as a string.</summary>
-    public static string ToDot(Graph graph)
+    public static string ToDot(Graph graph, RenderOptions options)
     {
         ArgumentNullException.ThrowIfNull(graph);
+        ArgumentNullException.ThrowIfNull(options);
 
         var sb = new StringBuilder();
         sb.Append("digraph \"").Append(Escape(graph.Name)).Append("\" {\n");
-        sb.Append("  rankdir=TB;\n");
-        sb.Append("  fontname=\"Helvetica,Arial,sans-serif\";\n");
-        sb.Append("  node [shape=box, style=\"rounded,filled\", fontname=\"Helvetica,Arial,sans-serif\", fontsize=11];\n");
-        sb.Append("  edge [fontname=\"Helvetica,Arial,sans-serif\", fontsize=9, color=\"#666666\"];\n\n");
+        sb.Append("  rankdir=").Append(options.LayoutDirection == GraphLayoutDirection.LeftToRight ? "LR" : "TB").Append(";\n");
+        sb.Append("  dpi=").Append(options.Dpi).Append(";\n");
+        sb.Append("  fontname=\"").Append(Escape(options.FontName)).Append("\";\n");
+
+        if (options.ShowSummaryHeader)
+        {
+            sb.Append("  labelloc=\"t\";\n");
+            sb.Append("  label=\"").Append(Escape(BuildSummaryLabel(graph))).Append("\";\n");
+            sb.Append("  fontsize=14;\n");
+        }
+
+        sb.Append("  node [shape=box, style=\"rounded,filled\", fontname=\"").Append(Escape(options.FontName)).Append("\", fontsize=11];\n");
+        sb.Append("  edge [fontname=\"").Append(Escape(options.FontName)).Append("\", fontsize=9, color=\"#666666\"];\n\n");
 
         var (clusteredParentPaths, nodesByParent) = GroupByParent(graph.Nodes);
 
@@ -43,7 +56,7 @@ public static class DotRenderer
             sb.Append("    fontsize=10;\n");
             foreach (var node in nodesByParent[parentPath])
             {
-                sb.Append("    ").Append(RenderNode(node)).Append('\n');
+                sb.Append("    ").Append(RenderNode(node, options)).Append('\n');
             }
 
             sb.Append("  }\n");
@@ -52,7 +65,7 @@ public static class DotRenderer
 
         foreach (var node in graph.Nodes.Where(n => string.IsNullOrEmpty(n.ParentPath)))
         {
-            sb.Append("  ").Append(RenderNode(node)).Append('\n');
+            sb.Append("  ").Append(RenderNode(node, options)).Append('\n');
         }
 
         sb.Append('\n');
@@ -67,9 +80,20 @@ public static class DotRenderer
             sb.Append(";\n");
         }
 
+        if (options.ShowLegend)
+        {
+            sb.Append('\n').Append(BuildLegend());
+        }
+
         sb.Append('}').Append('\n');
         return sb.ToString();
     }
+
+    /// <summary>
+    /// Renders <paramref name="graph"/> to <paramref name="outputPath"/> using the default <see cref="RenderOptions"/>.
+    /// </summary>
+    public static void Render(Graph graph, string outputPath, string dotExecutable = "dot") =>
+        Render(graph, outputPath, RenderOptions.Default, dotExecutable);
 
     /// <summary>
     /// Renders <paramref name="graph"/> to <paramref name="outputPath"/>. The output format is
@@ -78,21 +102,23 @@ public static class DotRenderer
     /// </summary>
     /// <param name="graph">The graph to render.</param>
     /// <param name="outputPath">The destination file path.</param>
+    /// <param name="options">Layout and styling options. Defaults to <see cref="RenderOptions.Default"/> when omitted.</param>
     /// <param name="dotExecutable">
     /// The name or path of the Graphviz executable to invoke for image formats. Defaults to <c>"dot"</c>,
     /// which must be resolvable on <c>PATH</c>.
     /// </param>
     /// <exception cref="NotSupportedException">The file extension is not one of <c>.dot</c>, <c>.gv</c>, <c>.png</c>, or <c>.svg</c>.</exception>
     /// <exception cref="InvalidOperationException">The Graphviz executable could not be started or exited with an error.</exception>
-    public static void Render(Graph graph, string outputPath, string dotExecutable = "dot")
+    public static void Render(Graph graph, string outputPath, RenderOptions options, string dotExecutable = "dot")
     {
         ArgumentNullException.ThrowIfNull(graph);
+        ArgumentNullException.ThrowIfNull(options);
         if (string.IsNullOrWhiteSpace(outputPath))
         {
             throw new ArgumentException("Output path must not be empty.", nameof(outputPath));
         }
 
-        var dotSource = ToDot(graph);
+        var dotSource = ToDot(graph, options);
         var extension = Path.GetExtension(outputPath).TrimStart('.').ToLowerInvariant();
 
         switch (extension)
@@ -109,6 +135,33 @@ public static class DotRenderer
                 throw new NotSupportedException(
                     $"Unsupported output extension '.{extension}'. Use .png, .svg, .dot, or .gv.");
         }
+    }
+
+    private static string BuildSummaryLabel(Graph graph)
+    {
+        var parameterText = graph.TotalParameterCount > 0
+            ? $"{graph.TotalParameterCount:N0} parameters"
+            : "no learnable parameters";
+        return $"{graph.Name}\n{graph.LayerCount} layers • {parameterText}";
+    }
+
+    private static string BuildLegend()
+    {
+        var sb = new StringBuilder();
+        sb.Append("  subgraph \"cluster_legend\" {\n");
+        sb.Append("    label=\"Legend\";\n");
+        sb.Append("    style=\"rounded\";\n");
+        sb.Append("    color=\"#cccccc\";\n");
+        sb.Append("    fontsize=10;\n");
+        sb.Append("    labelloc=\"t\";\n");
+        sb.Append("    \"legend_io\" [label=\"Input / Output\", fillcolor=\"").Append(InputOutputColor).Append("\"];\n");
+        sb.Append("    \"legend_module\" [label=\"Layer (has parameters)\", fillcolor=\"").Append(ModuleColor).Append("\"];\n");
+        sb.Append("    \"legend_operation\" [label=\"Operation (stateless)\", fillcolor=\"").Append(OperationColor).Append("\"];\n");
+        // Invisible edges keep the three legend entries stacked in a single readable column
+        // without visually implying a data-flow connection.
+        sb.Append("    \"legend_io\" -> \"legend_module\" -> \"legend_operation\" [style=invis];\n");
+        sb.Append("  }\n");
+        return sb.ToString();
     }
 
     private static (List<string> order, Dictionary<string, List<Node>> byParent) GroupByParent(IEnumerable<Node> nodes)
@@ -135,7 +188,7 @@ public static class DotRenderer
         return (order, byParent);
     }
 
-    private static string RenderNode(Node node)
+    private static string RenderNode(Node node, RenderOptions options)
     {
         var color = node.Kind switch
         {
@@ -145,11 +198,11 @@ public static class DotRenderer
             _ => "#FFFFFF",
         };
 
-        var label = BuildLabel(node);
+        var label = BuildLabel(node, options);
         return $"\"{node.Id}\" [label=\"{label}\", fillcolor=\"{color}\"];";
     }
 
-    private static string BuildLabel(Node node)
+    private static string BuildLabel(Node node, RenderOptions options)
     {
         var lines = new List<string>();
         if (node.Kind == NodeKind.Input)
@@ -169,6 +222,11 @@ public static class DotRenderer
             if (node.Attributes.Count > 0)
             {
                 lines.Add(string.Join(", ", node.Attributes.Select(kv => $"{kv.Key}={kv.Value}")));
+            }
+
+            if (options.ShowParameterCounts && node.ParameterCount > 0)
+            {
+                lines.Add($"{node.ParameterCount:N0} params");
             }
 
             lines.Add($"in: {ShapeFormatter.Format(node.InputShape)}");

@@ -11,6 +11,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A4C1B9E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TorchSharpVisual.Tests", "tests\TorchSharpVisual.Tests\TorchSharpVisual.Tests.csproj", "{177AE605-21E6-4349-B889-1E3C45ED6D68}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{CC9B5FB4-6830-4601-B148-5C04E5CB5412}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TorchSharpVisual.Sample", "samples\TorchSharpVisual.Sample\TorchSharpVisual.Sample.csproj", "{CA3FB88F-063C-4D03-9783-30E73003F83B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -28,9 +32,14 @@ Global
 		{177AE605-21E6-4349-B889-1E3C45ED6D68}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{177AE605-21E6-4349-B889-1E3C45ED6D68}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{177AE605-21E6-4349-B889-1E3C45ED6D68}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CA3FB88F-063C-4D03-9783-30E73003F83B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CA3FB88F-063C-4D03-9783-30E73003F83B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CA3FB88F-063C-4D03-9783-30E73003F83B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CA3FB88F-063C-4D03-9783-30E73003F83B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{D8CEE50E-6E75-4EA5-AFA0-391326887304} = {F6A795D3-D179-4BB7-BBE3-E064003D1034}
 		{177AE605-21E6-4349-B889-1E3C45ED6D68} = {1A4C1B9E-2AA8-4DE9-BC8A-1EAC95F934AE}
+		{CA3FB88F-063C-4D03-9783-30E73003F83B} = {CC9B5FB4-6830-4601-B148-5C04E5CB5412}
 	EndGlobalSection
 EndGlobal

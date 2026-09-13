@@ -10,7 +10,7 @@
 
     <!-- NuGet package metadata -->
     <PackageId>TorchSharpVisual</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Authors>TorchSharpVisual Contributors</Authors>
     <Description>Generate clean, color-coded architecture diagrams for TorchSharp neural network models, inspired by torchview and visualkeras.</Description>
     <PackageTags>torchsharp;pytorch;dotnet;visualization;graphviz;neural-network;deep-learning</PackageTags>

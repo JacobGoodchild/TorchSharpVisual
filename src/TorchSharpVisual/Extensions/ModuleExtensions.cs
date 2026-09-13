@@ -22,6 +22,7 @@ public static class ModuleExtensions
     /// source with no external dependency.
     /// </param>
     /// <param name="modelName">An optional display name for the diagram; defaults to the model's type name.</param>
+    /// <param name="options">Layout and styling options (layout direction, legend, parameter counts, DPI). Defaults to <see cref="RenderOptions.Default"/>.</param>
     /// <param name="dotExecutable">The name or path of the Graphviz executable to use for image formats.</param>
     /// <example>
     /// <code>
@@ -34,10 +35,11 @@ public static class ModuleExtensions
         long[] inputShape,
         string fileName,
         string? modelName = null,
+        RenderOptions? options = null,
         string dotExecutable = "dot")
     {
         var graph = TorchSharpExtractor.Extract(model, inputShape, modelName);
-        DotRenderer.Render(graph, fileName, dotExecutable);
+        DotRenderer.Render(graph, fileName, options ?? RenderOptions.Default, dotExecutable);
     }
 
     /// <summary>
@@ -48,9 +50,10 @@ public static class ModuleExtensions
     /// <param name="model">The model to visualize.</param>
     /// <param name="inputShape">The shape of the dummy input tensor, e.g. <c>new long[] { 1, 3, 224, 224 }</c>.</param>
     /// <param name="modelName">An optional display name for the diagram; defaults to the model's type name.</param>
-    public static string ToDotGraph(this torch.nn.Module model, long[] inputShape, string? modelName = null)
+    /// <param name="options">Layout and styling options. Defaults to <see cref="RenderOptions.Default"/>.</param>
+    public static string ToDotGraph(this torch.nn.Module model, long[] inputShape, string? modelName = null, RenderOptions? options = null)
     {
         var graph = TorchSharpExtractor.Extract(model, inputShape, modelName);
-        return DotRenderer.ToDot(graph);
+        return DotRenderer.ToDot(graph, options ?? RenderOptions.Default);
     }
 }

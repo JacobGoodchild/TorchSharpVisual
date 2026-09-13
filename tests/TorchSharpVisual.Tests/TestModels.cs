@@ -92,3 +92,36 @@ internal sealed class NestedModel : nn.Module<Tensor, Tensor>
         return x;
     }
 }
+
+/// <summary>
+/// A model with a genuine fork/join topology: a shared trunk feeds two sibling branches whose
+/// outputs are combined with a raw tensor add (not itself a module call) before a final layer.
+/// Exercises the extractor's tensor-identity-based dataflow tracking rather than a naive
+/// execution-order chain.
+/// </summary>
+internal sealed class BranchingModel : nn.Module<Tensor, Tensor>
+{
+    private readonly nn.Module<Tensor, Tensor> trunk;
+    private readonly nn.Module<Tensor, Tensor> branchA;
+    private readonly nn.Module<Tensor, Tensor> branchB;
+    private readonly nn.Module<Tensor, Tensor> merge;
+
+    public BranchingModel(long features)
+        : base(nameof(BranchingModel))
+    {
+        trunk = nn.Linear(features, features);
+        branchA = nn.Linear(features, features);
+        branchB = nn.Linear(features, features);
+        merge = nn.Linear(features, features);
+        RegisterComponents();
+    }
+
+    public override Tensor forward(Tensor input)
+    {
+        var h = trunk.call(input);
+        var a = branchA.call(h);
+        var b = branchB.call(h);
+        using var combined = a + b; // untracked raw tensor op between modules
+        return merge.call(combined);
+    }
+}

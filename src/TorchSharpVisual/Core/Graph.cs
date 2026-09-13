@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace TorchSharpVisual.Core;
 
@@ -22,4 +23,10 @@ public sealed class Graph
 
     /// <summary>Appends an edge to the graph.</summary>
     public void AddEdge(Edge edge) => Edges.Add(edge);
+
+    /// <summary>The total number of learnable parameters across every node in the graph.</summary>
+    public long TotalParameterCount => Nodes.Sum(n => n.ParameterCount);
+
+    /// <summary>The number of layer/operation nodes in the graph (excludes the input and output tensor nodes).</summary>
+    public int LayerCount => Nodes.Count(n => n.Kind is NodeKind.Module or NodeKind.Operation);
 }

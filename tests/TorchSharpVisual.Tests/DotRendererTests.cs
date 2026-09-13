@@ -26,6 +26,7 @@ public class DotRendererTests
             Kind = NodeKind.Module,
             InputShape = new long[] { 1, 3, 224, 224 },
             OutputShape = new long[] { 1, 16, 224, 224 },
+            ParameterCount = 448,
         });
         graph.AddNode(new Node
         {
@@ -87,6 +88,59 @@ public class DotRendererTests
         Assert.Contains("Weird\\\"Name", dot);
         Assert.Contains("a\\\\b", dot);
         Assert.Contains("Custom\\\"Type", dot);
+    }
+
+    [Fact]
+    public void ToDot_DefaultOptions_IncludesLegendAndSummaryHeaderAndParameterCounts()
+    {
+        var dot = DotRenderer.ToDot(BuildSampleGraph());
+
+        Assert.Contains("cluster_legend", dot);
+        Assert.Contains("Input / Output", dot);
+        Assert.Contains("Layer (has parameters)", dot);
+        Assert.Contains("Operation (stateless)", dot);
+        Assert.Contains("SampleModel", dot); // summary header names the model
+        Assert.Contains("448 params", dot); // conv1's parameter count on its node label
+    }
+
+    [Fact]
+    public void ToDot_LegendDisabled_OmitsLegendCluster()
+    {
+        var options = new RenderOptions { ShowLegend = false };
+
+        var dot = DotRenderer.ToDot(BuildSampleGraph(), options);
+
+        Assert.DoesNotContain("cluster_legend", dot);
+    }
+
+    [Fact]
+    public void ToDot_ParameterCountsDisabled_OmitsParamsFromNodeLabels()
+    {
+        var options = new RenderOptions { ShowParameterCounts = false };
+
+        var dot = DotRenderer.ToDot(BuildSampleGraph(), options);
+
+        Assert.DoesNotContain("448 params", dot);
+    }
+
+    [Fact]
+    public void ToDot_LeftToRightLayout_SetsRankdirLR()
+    {
+        var options = new RenderOptions { LayoutDirection = GraphLayoutDirection.LeftToRight };
+
+        var dot = DotRenderer.ToDot(BuildSampleGraph(), options);
+
+        Assert.Contains("rankdir=LR;", dot);
+    }
+
+    [Fact]
+    public void ToDot_SummaryHeaderDisabled_OmitsGraphLabel()
+    {
+        var options = new RenderOptions { ShowSummaryHeader = false };
+
+        var dot = DotRenderer.ToDot(BuildSampleGraph(), options);
+
+        Assert.DoesNotContain("layers •", dot); // the summary header's distinguishing text
     }
 
     [Fact]
