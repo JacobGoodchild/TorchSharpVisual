@@ -1,8 +1,9 @@
 # TorchSharpVisual
 
 [![CI](https://github.com/JacobGoodchild/TorchSharpVisual/actions/workflows/ci.yml/badge.svg)](https://github.com/JacobGoodchild/TorchSharpVisual/actions/workflows/ci.yml)
-[![NuGet](https://img.shields.io/badge/nuget-TorchSharpVisual-blue)](https://www.nuget.org/packages/TorchSharpVisual)
-[![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](#license)
+[![NuGet Version](https://img.shields.io/nuget/v/TorchSharpVisual)](https://www.nuget.org/packages/TorchSharpVisual)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/TorchSharpVisual)](https://www.nuget.org/packages/TorchSharpVisual)
+[![License: MIT](https://img.shields.io/github/license/JacobGoodchild/TorchSharpVisual)](LICENSE)
 [![.NET 8.0](https://img.shields.io/badge/.NET-8.0-512BD4)](#)
 
 **TorchSharpVisual** draws clean, color-coded architecture diagrams for [TorchSharp](https://github.com/dotnet/TorchSharp) models — the same idea as Python's [`torchview`](https://github.com/mert-kurttutan/torchview) and [`visualkeras`](https://github.com/paulgavrikov/visualkeras), but for .NET.
